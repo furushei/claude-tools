@@ -1,0 +1,6 @@
+# Never commit real credentials
+pushover.json
+*.local.json
+.env
+.env.*
+!.env.example

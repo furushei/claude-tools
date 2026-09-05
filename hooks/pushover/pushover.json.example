@@ -1,0 +1,7 @@
+{
+  "token": "<Pushover application API token>",
+  "user": "<Pushover user key>",
+  "priority": 0,
+  "sound": "pushover",
+  "device": ""
+}
