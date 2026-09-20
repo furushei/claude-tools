@@ -21,13 +21,14 @@ Pushes Claude Code `Notification` events (waiting for permission or input) to [P
        "user": "<User Key>",
        "priority": 0,
        "sound": "pushover",
-       "device": ""
+       "device": "",
+       "cooldown": 60
      }
      ```
 
-     `priority`, `sound` and `device` are optional.
+     `priority`, `sound`, `device` and `cooldown` are optional.
 
-   - The `PUSHOVER_TOKEN` / `PUSHOVER_USER` environment variables, which take precedence over the file.
+   - The `PUSHOVER_TOKEN` / `PUSHOVER_USER` / `PUSHOVER_COOLDOWN` environment variables, which take precedence over the file.
 
 3. Install:
 
@@ -68,6 +69,18 @@ The installer adds this entry to `~/.claude/settings.json`:
 - `async: true`, so the session is never blocked.
 - The hook **always exits 0**, including when credentials are missing or the push fails. The reason goes to stderr only; the session keeps running.
 - It runs under `powershell.exe` (Windows PowerShell 5.1), not `pwsh`. The settings key `"shell": "powershell"` requires `pwsh`, so the hook is launched directly through the `args` exec form instead.
+
+## Throttling
+
+To avoid a burst of pushes, once a notification has been sent, further ones from the **same session** (keyed by the payload's `session_id`, falling back to `cwd`) are suppressed for `cooldown` seconds.
+
+- Default is `60`; `0` disables throttling. Set it in `pushover.json` or with `PUSHOVER_COOLDOWN` (the env var wins).
+- Different sessions throttle independently, so a second project is never silenced by the first.
+- The window is a fixed one measured from the last *sent* push. Suppressed notifications are dropped, not queued or merged, so a different message arriving inside the window is dropped too.
+- A push that fails (bad credentials, network error) does not start a window.
+- State is one small `*.stamp` file per session in `~/.claude/hooks/pushover-state/` (override with `PUSHOVER_STATE_DIR`); its modification time is the last-sent time. Stamps older than 7 days are cleaned up automatically. A named mutex makes the check-and-claim atomic when hooks fire at the same moment.
+- If the throttle itself breaks (unwritable state directory, etc.), it fails open and the notification is sent anyway.
+- Suppressions are logged to stderr only (`suppressed (last push 12s ago, cooldown 60s)`).
 
 ## Trying it locally
 
