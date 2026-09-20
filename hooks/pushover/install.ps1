@@ -56,7 +56,8 @@ if ($settings.PSObject.Properties.Name -contains 'hooks' -and
 
 function Save-Settings($obj) {
     $json = $obj | ConvertTo-Json -Depth 20
-    Set-Content -LiteralPath $settingsPath -Value $json -Encoding utf8
+    # Set-Content -Encoding utf8 adds a BOM on Windows PowerShell 5.1.
+    [IO.File]::WriteAllText($settingsPath, $json, (New-Object Text.UTF8Encoding($false)))
 }
 
 function Set-Notification($obj, $groups) {
